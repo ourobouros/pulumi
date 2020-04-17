@@ -1135,19 +1135,12 @@ func (mod *modContext) genResource(r *schema.Resource) resourceDocArgs {
 		Notes:      mod.pkg.Attribution,
 	}
 
-	var titleTag string
-	if val, ok := titleLookup[mod.pkg.Name]; ok {
-		titleTag = val
-	} else {
-		titleTag = mod.pkg.Name
-	}
-
 	stateParam := name + "State"
 
 	data := resourceDocArgs{
 		Header: header{
 			Title:    name,
-			TitleTag: fmt.Sprintf("Resource %s | Package %s", name, titleTag),
+			TitleTag: fmt.Sprintf("Resource %s | Module %s | Package %s", name, mod.mod, formatTitleText(mod.pkg.Name)),
 			MetaDesc: metaDescriptionRegexp.FindString((r.Comment)),
 		},
 
@@ -1391,12 +1384,7 @@ func (mod *modContext) genIndex() indexData {
 	title := modName
 	menu := false
 	if title == "" {
-		// If title not found in titleLookup map, default back to mod.pkg.Name.
-		if val, ok := titleLookup[mod.pkg.Name]; ok {
-			title = val
-		} else {
-			title = mod.pkg.Name
-		}
+		title = formatTitleText(mod.pkg.Name)
 		// Flag top-level entries for inclusion in the table-of-contents menu.
 		menu = true
 	}
@@ -1439,12 +1427,22 @@ func (mod *modContext) genIndex() indexData {
 		Notes:      mod.pkg.Attribution,
 	}
 
+	var titleTag string
+	// The same index.tmpl tmeplate is used for both top level package and module pages, if modules not present,
+	// assume top level package index page when formatting title tags otherwise, if contains modules, assume modules
+	// top level page when generating title tags.
+	if len(modules) > 0 {
+		titleTag = fmt.Sprintf("Package %s", formatTitleText(title))
+	} else {
+		titleTag = fmt.Sprintf("Module %s | Package %s", title, formatTitleText(mod.pkg.Name))
+	}
+
 	data := indexData{
 		Tool: mod.tool,
 
-		Title: title,
-		Menu:  menu,
-
+		Title:          title,
+		TitleTag:       titleTag,
+		Menu:           menu,
 		Resources:      resources,
 		Functions:      functions,
 		Modules:        modules,
@@ -1457,6 +1455,14 @@ func (mod *modContext) genIndex() indexData {
 	}
 
 	return data
+}
+
+func formatTitleText(title string) string {
+	// If title not found in titleLookup map, default back to title given.
+	if val, ok := titleLookup[title]; ok {
+		return val
+	}
+	return title
 }
 
 func decodeLangSpecificInfo(pkg *schema.Package, lang string, obj interface{}) error {
