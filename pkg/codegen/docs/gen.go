@@ -27,6 +27,7 @@ import (
 	"html"
 	"html/template"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -123,7 +124,9 @@ func init() {
 
 // header represents the header of each resource markdown file.
 type header struct {
-	Title string
+	Title    string
+	TitleTag string
+	MetaDesc string
 }
 
 // property represents an input or an output property.
@@ -1129,10 +1132,20 @@ func (mod *modContext) genResource(r *schema.Resource) resourceDocArgs {
 		Notes:      mod.pkg.Attribution,
 	}
 
+	var titleTag string
+	if val, ok := titleLookup[mod.pkg.Name]; ok {
+		titleTag = val
+	} else {
+		titleTag = mod.pkg.Name
+	}
+
 	stateParam := name + "State"
+
 	data := resourceDocArgs{
 		Header: header{
-			Title: name,
+			Title:    name,
+			TitleTag: fmt.Sprintf("Resource %s | Package %s", name, titleTag),
+			MetaDesc: regexp.MustCompile(`(?m)^.*$`).FindString((r.Comment)),
 		},
 
 		Comment:            r.Comment,
