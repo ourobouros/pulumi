@@ -100,6 +100,9 @@ var (
 		"vault":        "Vault",
 		"vsphere":      "vSphere",
 	}
+	// metaDescriptionRegexp attempts to extract the description from Resource.Comment.
+	// Extracts the first line, essentially the "human-friendly" part of the description.
+	metaDescriptionRegexp = regexp.MustCompile(`(?m)^.*$`)
 )
 
 func init() {
@@ -1145,7 +1148,7 @@ func (mod *modContext) genResource(r *schema.Resource) resourceDocArgs {
 		Header: header{
 			Title:    name,
 			TitleTag: fmt.Sprintf("Resource %s | Package %s", name, titleTag),
-			MetaDesc: regexp.MustCompile(`(?m)^.*$`).FindString((r.Comment)),
+			MetaDesc: metaDescriptionRegexp.FindString((r.Comment)),
 		},
 
 		Comment:            r.Comment,
